@@ -28,6 +28,8 @@
         .btn-secondary:hover { background: #F7F8F9; }
         .btn:focus-visible { outline: 2px solid #E8792B; outline-offset: 2px; }
         .error { color: #D6402C; font-size: 0.83rem; margin-top: 0.3rem; }
+        .char-count { text-align: right; font-size: 0.8rem; color: #5B6570; margin-top: 0.4rem; }
+        .char-count.over { color: #D6402C; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -66,7 +68,8 @@
 
                 <div class="form-group">
                     <label for="content">本文</label>
-                    <textarea id="content" name="content" required>{{ old('content', $post->content) }}</textarea>
+                    <textarea id="content" name="content" maxlength="140" required>{{ old('content', $post->content) }}</textarea>
+                    <p id="content-count" class="char-count"></p>
                     @error('content')
                         <p class="error">{{ $message }}</p>
                     @enderror
@@ -79,5 +82,20 @@
             </form>
         </main>
     </div>
+
+    <script>
+        const contentField = document.getElementById('content');
+        const contentCount = document.getElementById('content-count');
+        const maxLength = 140;
+
+        function updateContentCount() {
+            const remaining = maxLength - contentField.value.length;
+            contentCount.textContent = `残り${remaining}字`;
+            contentCount.classList.toggle('over', remaining < 0);
+        }
+
+        contentField.addEventListener('input', updateContentCount);
+        updateContentCount();
+    </script>
 </body>
 </html>
