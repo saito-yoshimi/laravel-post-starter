@@ -92,4 +92,60 @@ class ReplyTest extends TestCase
         $response->assertForbidden();
         $this->assertDatabaseHas('replies', ['id' => $reply->id]);
     }
+
+    public function test_guest_is_redirected_to_login_when_viewing_post_show(): void
+    {
+        $post = Post::factory()->create();
+
+        $response = $this->get(route('posts.show', $post));
+
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_guest_is_redirected_to_login_when_creating_reply(): void
+    {
+        $post = Post::factory()->create();
+
+        $response = $this->post(route('replies.store', $post), [
+            'content' => 'ゲストからのリプライ',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseCount('replies', 0);
+    }
+
+    public function test_guest_is_redirected_to_login_when_deleting_reply(): void
+    {
+        $post = Post::factory()->create();
+        $reply = Reply::factory()->for($post)->create();
+
+        $response = $this->delete(route('replies.destroy', [$post, $reply]));
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseHas('replies', ['id' => $reply->id]);
+    }
+
+    public function test_deleting_reply_that_does_not_belong_to_post_returns_404(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::factory()->create();
+        $otherPost = Post::factory()->create();
+        $reply = Reply::factory()->for($otherPost)->for($user)->create();
+
+        $response = $this->actingAs($user)->delete(route('replies.destroy', [$post, $reply]));
+
+        $response->assertNotFound();
+        $this->assertDatabaseHas('replies', ['id' => $reply->id]);
+    }
+
+    public function test_deleting_post_also_deletes_its_replies(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::factory()->for($user)->create();
+        $reply = Reply::factory()->for($post)->create();
+
+        $post->delete();
+
+        $this->assertDatabaseMissing('replies', ['id' => $reply->id]);
+    }
 }
